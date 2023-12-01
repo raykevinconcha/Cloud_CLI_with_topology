@@ -90,124 +90,186 @@ def print_menu(title, options):
     return respuesta['opcion']
 
 # Función para crear un slice
+def gestionar_usuarios(usuarios):
+    while True:
+        print("\n=== Gestión de Usuarios ===\n")
+        opciones = {
+            "1": "Agregar nuevo usuario",
+            "2": "Eliminar usuario",
+            "3": "Cambiar contraseña",
+            "4": "Salir"
+        }
+        seleccion = input_menu("Seleccione una opción:", opciones)
+
+        if seleccion == "4":
+            break
+        elif seleccion == "1":
+            nuevo_usuario = input("Ingrese el nombre del nuevo usuario: ")
+            nueva_contraseña = input("Ingrese la contraseña del nuevo usuario: ")
+            rol = input("Ingrese el rol del nuevo usuario (admin o usuario_normal): ")
+            usuarios[nuevo_usuario] = {"contraseña": nueva_contraseña, "rol": rol, "slices": []}
+            print(f"Usuario '{nuevo_usuario}' agregado correctamente.")
+        elif seleccion == "2":
+            usuario_eliminar = input("Ingrese el nombre del usuario a eliminar: ")
+            if usuario_eliminar in usuarios:
+                del usuarios[usuario_eliminar]
+                print(f"Usuario '{usuario_eliminar}' eliminado correctamente.")
+            else:
+                print("El usuario no existe.")
+        elif seleccion == "3":
+            usuario_cambiar_contraseña = input("Ingrese el nombre del usuario para cambiar la contraseña: ")
+            if usuario_cambiar_contraseña in usuarios:
+                nueva_contraseña = input("Ingrese la nueva contraseña: ")
+                usuarios[usuario_cambiar_contraseña]["contraseña"] = nueva_contraseña
+                print("Contraseña cambiada correctamente.")
+            else:
+                print("El usuario no existe.")
+        else:
+            print("Opción no válida.")
+
+
+# Modifica la función para crear slice
 def crear_slice(usuario, slices_creados, topologias_options):
     arquitectura_options = {
-        "1": "Aws",
-        "2": "Openstack",
+        "1": "OpenStack",
+        "2": "Linux Cluster",
         "3": "Salir"
     }
 
-    arquitectura = print_menu("Selección de Arquitectura", arquitectura_options)
+    arquitectura = input_menu("Selección de Arquitectura", arquitectura_options)
     print(f"Arquitectura seleccionada: {arquitectura}")
 
     if arquitectura == "3":
         return
 
-    elif arquitectura == "1" or arquitectura == "2":
-        while True:
-            region_options = {
-                "1": "USA",
-                "2": "Latinoamerica",
-                "3": "Salir"
-            }
-            region = print_menu("Selección de Region", region_options)
-            print(f"Region seleccionada: {region}")
+    while True:
+        worker_options = {
+            "1": "Worker 1",
+            "2": "Worker 2",
+            "3": "Worker 3",
+            "4": "Salir"
+        }
+        worker = input_menu("Selección de Worker (Región)", worker_options)
 
-            if region == "3":
-                break
-            elif region == "1":
-                while True:
-                    topologia_questions = [
-                        inquirer.List('topologia',
-                                      message="Selecciona una topología:",
-                                      choices=[(topologia, key) for key, topologia in
-                                               topologias_options.items()],
+        if worker == "4":
+            break
+        elif worker in ["1", "2", "3"]:
+            worker_name = "Worker " + worker
+            while True:
+                topologia_options = {
+                    "1": "Lineal",
+                    "2": "Árbol",
+                    "3": "Malla",
+                    "4": "Anillo",
+                    "5": "Salir"
+                }
+                topologia = input_menu("Selección de Topología", topologia_options)
+                print(f"Topología seleccionada: {topologia_options[topologia]}")
+
+                if topologia == "5":
+                    break
+
+                elif topologia in topologia_options:
+                    topo_seleccionada = topologia_options[topologia]
+
+                    nombre_slice = input("Ingresa un nombre para la slice: ")
+                    num_cpus = int(input("Ingresa la cantidad de CPUs: "))
+
+                    # Variables específicas para la topología de árbol
+                    r = h = None
+                    if topo_seleccionada == "Árbol":
+                        r = int(input("Ingrese el número de ramificaciones por nodo: "))
+                        h = int(input("Ingrese la altura del árbol: "))
+
+                    total_ram = 0
+                    total_almacenamiento = 0
+                    cpus_info = []
+
+                    for cpu_num in range(1, num_cpus + 1):
+                        print(f"\nDetalles para la CPU {cpu_num}:")
+                        ram = int(input("Ingresa la cantidad de RAM en MB para esta CPU: "))
+                        almacenamiento = int(
+                            input("Ingresa la cantidad de almacenamiento en MB para esta CPU: "))
+
+                        cpus_info.append(
+                            {"CPU": cpu_num, "RAM": ram, "Almacenamiento": almacenamiento})
+                        total_ram += ram
+                        total_almacenamiento += almacenamiento
+
+                    slice_info = {
+                        "Nombre": nombre_slice,
+                        "Topología": topo_seleccionada,
+                        "Total CPUs": num_cpus,
+                        "Total RAM": total_ram,
+                        "Total Almacenamiento": total_almacenamiento,
+                        "Detalle CPUs": cpus_info,
+                        "Ramificaciones": r if r else None,
+                        "Altura": h if h else None,
+                        "Arquitectura": arquitectura,
+                        "Worker": worker_name
+                    }
+
+                    if usuario not in slices_creados:
+                        slices_creados[usuario] = []
+                    slices_creados[usuario].append(slice_info)
+
+                    print(f"\nSlice creado exitosamente. Detalles del Slice: {slice_info['Nombre']}")
+                    cpu_headers = ["CPU", "RAM (MB)", "Alm. (MB)"]
+                    cpu_table = [[cpu['CPU'], cpu['RAM'], cpu['Almacenamiento']] for cpu in
+                                 slice_info["Detalle CPUs"]]
+                    print(tabulate(cpu_table, cpu_headers, tablefmt="grid"))
+
+                    post_creation_questions = [
+                        inquirer.List('post_creation_action',
+                                      message="¿Qué acción deseas realizar ahora?",
+                                      choices=['Imprimir topología', 'Mostrar JSON', 'Ambos',
+                                               'Volver al menú principal'],
                                       )
                     ]
-                    topologia_respuesta = inquirer.prompt(topologia_questions)
-                    topologia = topologia_respuesta['topologia']
-                    print(f"Topología seleccionada: {topologias_options[topologia]}")
+                    post_creation_action = input_menu("Acción post-creación", post_creation_questions)
+                    if post_creation_action == 'Imprimir topología' or post_creation_action == 'Ambos':
+                        if slice_info['Topología'] == "Lineal":
+                            crear_topologia_lineal(slice_info['Total CPUs'])
+                        elif slice_info['Topología'] == "Árbol":
+                            r = slice_info.get('Ramificaciones', 2)
+                            h = slice_info.get('Altura', 1)
+                            crear_topologia_arbol(r, h)
+                        elif slice_info['Topología'] == "Malla":
+                            crear_topologia_malla_full_mesh(slice_info['Total CPUs'])
+                        elif slice_info['Topología'] == "Anillo":
+                            crear_topologia_anillo(slice_info['Total CPUs'])
+                        else:
+                            print("Topología no reconocida.")
 
-                    if topologia == "5":
-                        break
+                    if post_creation_action in ['Mostrar JSON', 'Ambos']:
+                        print(json.dumps(slice_info, indent=4))
+                    break
+                else:
+                    print("Topología no válida. Por favor, selecciona una topología válida.")
+        else:
+            print("Worker no válido. Por favor, selecciona una región válida.")
 
-                    elif topologia in topologias_options:
-                        topo_seleccionada = topologias_options[topologia]
 
-                        nombre_slice = input("Ingresa un nombre para la slice: ")
-                        num_cpus = int(input("Ingresa la cantidad de CPUs: "))
+# Función para mostrar menú y obtener una selección del usuario
+def input_menu(message, options):
+    print("\n" + "=" * 50)
+    print(f"{message.center(50)}")
+    print("=" * 50)
 
-                        # Variables específicas para la topología de árbol
-                        r = h = None
-                        if topo_seleccionada == "Árbol":
-                            r = int(input("Ingrese el número de ramificaciones por nodo: "))
-                            h = int(input("Ingrese la altura del árbol: "))
+    questions = [
+        inquirer.List('opcion',
+                      message="Selecciona una opción:",
+                      choices=[(option, key) for key, option in options.items()],
+                      )
+    ]
+    respuesta = inquirer.prompt(questions)
 
-                        total_ram = 0
-                        total_almacenamiento = 0
-                        cpus_info = []
+    print("=" * 50)
+    return respuesta['opcion']
 
-                        for cpu_num in range(1, num_cpus + 1):
-                            print(f"\nDetalles para la CPU {cpu_num}:")
-                            ram = int(input("Ingresa la cantidad de RAM en MB para esta CPU: "))
-                            almacenamiento = int(
-                                input("Ingresa la cantidad de almacenamiento en MB para esta CPU: "))
 
-                            cpus_info.append(
-                                {"CPU": cpu_num, "RAM": ram, "Almacenamiento": almacenamiento})
-                            total_ram += ram
-                            total_almacenamiento += almacenamiento
 
-                        slice_info = {
-                            "Nombre": nombre_slice,
-                            "Topología": topo_seleccionada,
-                            "Total CPUs": num_cpus,
-                            "Total RAM": total_ram,
-                            "Total Almacenamiento": total_almacenamiento,
-                            "Detalle CPUs": cpus_info,
-                            "Ramificaciones": r if r else None,
-                            "Altura": h if h else None
-                        }
-
-                        if usuario not in slices_creados:
-                            slices_creados[usuario] = []
-                        slices_creados[usuario].append(slice_info)
-
-                        print(
-                            f"\nSlice creado exitosamente. Detalles del Slice: {slice_info['Nombre']}")
-                        cpu_headers = ["CPU", "RAM (MB)", "Alm. (MB)"]
-                        cpu_table = [[cpu['CPU'], cpu['RAM'], cpu['Almacenamiento']] for cpu in
-                                     slice_info["Detalle CPUs"]]
-                        print(tabulate(cpu_table, cpu_headers, tablefmt="grid"))
-                        post_creation_questions = [
-                            inquirer.List('post_creation_action',
-                                          message="¿Qué acción deseas realizar ahora?",
-                                          choices=['Imprimir topología', 'Mostrar JSON', 'Ambos',
-                                                   'Volver al menú principal'],
-                                          )
-                        ]
-                        post_creation_action = inquirer.prompt(post_creation_questions)[
-                            'post_creation_action']
-
-                        if post_creation_action == 'Imprimir topología' or post_creation_action == 'Ambos':
-                            if slice_info['Topología'] == "Lineal":
-                                crear_topologia_lineal(slice_info['Total CPUs'])
-                            elif slice_info['Topología'] == "Árbol":
-                                r = slice_info.get('Ramificaciones', 2)
-                                h = slice_info.get('Altura', 1)
-                                crear_topologia_arbol(r, h)
-                            elif slice_info['Topología'] == "Malla":
-                                crear_topologia_malla_full_mesh(slice_info['Total CPUs'])
-                            elif slice_info['Topología'] == "Anillo":
-                                crear_topologia_anillo(slice_info['Total CPUs'])
-                            else:
-                                print("Topología no reconocida.")
-
-                        if post_creation_action in ['Mostrar JSON', 'Ambos']:
-                            print(json.dumps(slice_info, indent=4))
-                        break
-                    else:
-                        print("Topología no válida. Por favor, selecciona una topología válida.")
+workers = ["Worker 1", "Worker 2", "Worker 3"]
 
 # Función para listar los slices de un usuario
 def listar_slices(usuario, slices_creados):
@@ -326,6 +388,44 @@ def editar_slice(usuario, slices_creados):
         print("No tienes slices creados para editar.")
 
 
+# Define una función para gestionar usuarios
+def gestionar_usuarios(usuarios):
+    while True:
+        print("\n=== Gestión de Usuarios ===\n")
+        opciones = {
+            "1": "Agregar nuevo usuario",
+            "2": "Eliminar usuario",
+            "3": "Cambiar contraseña",
+            "4": "Salir"
+        }
+        seleccion = input_menu("Seleccione una opción:", opciones)
+
+        if seleccion == "4":
+            break
+        elif seleccion == "1":
+            nuevo_usuario = input("Ingrese el nombre del nuevo usuario: ")
+            nueva_contraseña = input("Ingrese la contraseña del nuevo usuario: ")
+            rol = input("Ingrese el rol del nuevo usuario (admin o usuario_normal): ")
+            usuarios[nuevo_usuario] = {"contraseña": nueva_contraseña, "rol": rol, "slices": []}
+            print(f"Usuario '{nuevo_usuario}' agregado correctamente.")
+        elif seleccion == "2":
+            usuario_eliminar = input("Ingrese el nombre del usuario a eliminar: ")
+            if usuario_eliminar in usuarios:
+                del usuarios[usuario_eliminar]
+                print(f"Usuario '{usuario_eliminar}' eliminado correctamente.")
+            else:
+                print("El usuario no existe.")
+        elif seleccion == "3":
+            usuario_cambiar_contraseña = input("Ingrese el nombre del usuario para cambiar la contraseña: ")
+            if usuario_cambiar_contraseña in usuarios:
+                nueva_contraseña = input("Ingrese la nueva contraseña: ")
+                usuarios[usuario_cambiar_contraseña]["contraseña"] = nueva_contraseña
+                print("Contraseña cambiada correctamente.")
+            else:
+                print("El usuario no existe.")
+        else:
+            print("Opción no válida.")
+
 
 def mostrar_bienvenida():
     print("\n" + "=" * 50)
@@ -393,7 +493,8 @@ while True:
                     "2": "Listar mis slices",
                     "3": "Borrar slice",
                     "4": "Editar Slice",
-                    "5": "Salir"
+                    "5": "Gestionar Usuarios",
+                    "6": "Salir"
                 }
                 opcion = print_menu("Menú Principal - Usuario Normal", menu_options)
                 print(f"Opción seleccionada: {opcion}")
@@ -413,6 +514,8 @@ while True:
                     borrar_slice(usuario, slices_creados)
                 elif opcion == "4":
                     editar_slice(usuario, slices_creados)
+                elif opcion == "5":
+                     gestionar_usuarios(usuarios)
                 else:
                     print("Opción no válida. Por favor, selecciona una opción válida.")
 
