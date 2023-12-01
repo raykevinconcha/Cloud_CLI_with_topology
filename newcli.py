@@ -273,8 +273,33 @@ workers = ["Worker 1", "Worker 2", "Worker 3"]
 
 # Función para listar los slices de un usuario
 def listar_slices(usuario, slices_creados):
-    print("\n=== Listado de Tus Slices ===\n")
+    while True:
+        opciones_listado = {
+            "1": "Tabla resumen de todas las topologías",
+            "2": "JSON con detalle de una topología en particular",
+            "3": "Gráfico de topología en particular",
+            "4": "Listar imágenes disponibles",
+            "5": "Listar recursos disponibles",
+            "6": "Volver al menú principal"
+        }
+        seleccion = input_menu("Opciones de listado de slices", opciones_listado)
 
+        if seleccion == "6":
+            break
+        elif seleccion == "1":
+            mostrar_resumen_topologias(usuario, slices_creados)
+        elif seleccion == "2":
+            mostrar_detalle_slice(usuario, slices_creados)
+        elif seleccion == "3":
+            imprimir_topologia_slice(usuario, slices_creados)
+        elif seleccion == "4":
+            listar_imagenes_disponibles(usuario, slices_creados)
+        elif seleccion == "5":
+            listar_recursos_disponibles(usuario, slices_creados)
+        else:
+            print("Opción no válida. Por favor, selecciona una opción válida.")
+
+def mostrar_resumen_topologias(usuario, slices_creados):
     if usuario in slices_creados and slices_creados[usuario]:
         headers = ["ID", "Nombre", "Topología", "CPUs", "RAM (MB)", "Alm. (MB)"]
         table = []
@@ -287,45 +312,52 @@ def listar_slices(usuario, slices_creados):
 
         print(tabulate(table, headers, tablefmt="grid"))
 
-        detalle_opcion = input(
-            "\n¿Deseas ver detalles de algún slice? Ingresa el ID o 'salir' para volver al menú: ")
+        detalle_opcion = input("\n¿Deseas ver detalles de algún slice? Ingresa el ID o 'salir' para volver al menú: ")
         if detalle_opcion.lower() != 'salir':
             try:
                 slice_idx = int(detalle_opcion) - 1
                 if 0 <= slice_idx < len(slices_creados[usuario]):
                     selected_slice = slices_creados[usuario][slice_idx]
-                    print(f"\nDetalles del Slice: {selected_slice['Nombre']}")
-                    if 'Detalle CPUs' in selected_slice:
-                        cpu_headers = ["CPU", "RAM (MB)", "Alm. (MB)"]
-                        cpu_table = [[cpu['CPU'], cpu['RAM'], cpu['Almacenamiento']] for cpu in
-                                     selected_slice["Detalle CPUs"]]
-                        print(tabulate(cpu_table, cpu_headers, tablefmt="grid"))
-                        imprimir_topologia_opcion = input(
-                            "\n¿Deseas imprimir la topología de este slice? (sí/no): ")
-                        if imprimir_topologia_opcion.lower() == 'si':
-                            if selected_slice['Topología'] == "Malla":
-                                crear_topologia_malla_full_mesh(selected_slice['Total CPUs'])
-                            elif selected_slice['Topología'] == "Lineal":
-                                crear_topologia_lineal(selected_slice['Total CPUs'])
-                            elif selected_slice['Topología'] == "Anillo":
-                                crear_topologia_anillo(selected_slice['Total CPUs'])
-                            elif selected_slice['Topología'] == "Árbol":
-                                r = selected_slice.get('Ramificaciones', 2)
-                                h = selected_slice.get('Altura', 1)
-                                crear_topologia_arbol(r, h)
-
-                    else:
-                        print("No hay detalles adicionales disponibles para este slice.")
+                    mostrar_detalle_slice(selected_slice)
                 else:
                     print("ID de slice no válido.")
             except ValueError:
                 print("Entrada no válida. Por favor, ingresa un número de ID válido.")
     else:
         print("No tienes slices creados.\n")
+def mostrar_detalle_slice(slice_info):
+    print(f"\nDetalles del Slice: {slice_info['Nombre']}")
+    if 'Detalle CPUs' in slice_info:
+        cpu_headers = ["CPU", "RAM (MB)", "Alm. (MB)"]
+        cpu_table = [[cpu['CPU'], cpu['RAM'], cpu['Almacenamiento']] for cpu in
+                     slice_info["Detalle CPUs"]]
+        print(tabulate(cpu_table, cpu_headers, tablefmt="grid"))
+        imprimir_topologia_opcion = input(
+            "\n¿Deseas imprimir la topología de este slice? (sí/no): ")
+        if imprimir_topologia_opcion.lower() == 'si':
+            imprimir_topologia_slice(slice_info)
 
-    input("\nPresiona Enter para volver al menú principal...")
+def imprimir_topologia_slice(slice_info):
+    if slice_info['Topología'] == "Malla":
+        crear_topologia_malla_full_mesh(slice_info['Total CPUs'])
+    elif slice_info['Topología'] == "Lineal":
+        crear_topologia_lineal(slice_info['Total CPUs'])
+    elif slice_info['Topología'] == "Anillo":
+        crear_topologia_anillo(slice_info['Total CPUs'])
+    elif slice_info['Topología'] == "Árbol":
+        r = slice_info.get('Ramificaciones', 2)
+        h = slice_info.get('Altura', 1)
+        crear_topologia_arbol(r, h)
+    else:
+        print("Topología no reconocida.")
 
+def listar_imagenes_disponibles(usuario, slices_creados):
+    # Aquí va la lógica para listar las imágenes disponibles
+    pass
 
+def listar_recursos_disponibles(usuario, slices_creados):
+    # Aquí va la lógica para listar los recursos disponibles
+    pass
 # Función para borrar un slice
 def borrar_slice(usuario, slices_creados):
     print("Selecciona el slice que deseas borrar:")
