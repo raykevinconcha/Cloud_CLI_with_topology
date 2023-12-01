@@ -1,6 +1,6 @@
 #!/bin/bash
 
-nombre_red=$1 # ex: vlan100
+nombre_vlan=$1 # ex: vlan100
 vlan_id=$2
 ovs="ovs"
 direccion_red=$3 # ejemplo 192.168.1.0/24
@@ -10,18 +10,18 @@ rango_ip_dhcp=$6 # en el formato lowest_ip,highest_ip,netmask por ejemplo 192.16
 dhcp_gateway_with_netmask=$7 
 
 # se crea el namespace
-if sudo ip netns del ns-$nombre_red; then
-    echo [+] Namespace eliminado: ns-$nombre_red
+if sudo ip netns del ns-$nombre_vlan; then
+    echo [+] Namespace eliminado: ns-$nombre_vlan
 fi 
 
 # creacion de interfaces veth
-sudo ip link del ovs-ns-$nombre_red 
+sudo ip link del ovs-ns-$nombre_vlan
 
 # se asigna un interfaz al ovs
-sudo ovs-vsctl del-port $ovs ovs-ns-$nombre_red
+sudo ovs-vsctl del-port $ovs ovs-ns-$nombre_vlan
 
 # se ejecuta dnsmasq
-rm /home/victor/lab03/leases_vlan$vlan_id 
+rm /home/grupo7/l_vlan$vlan_id
 
 # verificacion
 echo 
@@ -37,5 +37,5 @@ sudo ovs-vsctl show
 # eliminar proceso
 pid=$(ps -ef | grep "dnsmasq --dhcp-range=${rango_ip_dhcp}" | awk '{print $2}'| head -n 1)
 if  sudo kill -s SIGKILL $pid; then
-    echo [+] DNSMASQ corriendo en namespace ns-$nombre_red eliminado SATISFACTORIAMENTE
+    echo [+] DNSMASQ corriendo en namespace ns-$nombre_vlan eliminado SATISFACTORIAMENTE
 fi
