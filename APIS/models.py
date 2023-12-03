@@ -1,154 +1,236 @@
 
-# models.py
+from typing import List, Optional
 from pydantic import BaseModel
-from typing import List
-
-class RolBase(BaseModel):
-    name_rol: str
-
-class RolCreate(RolBase):
-    pass
-
-class Rol(RolBase):
-    idroldID: int
-
-    class Config:
-        from_attributes = True
+from datetime import datetime
 
 class UserBase(BaseModel):
-    name_user: str
     username: str
     password: str
-    roldID_idroldID: int
+    role: int
 
 class UserCreate(UserBase):
+    idUser: int
+
     pass
 
 class User(UserBase):
+    idUser: int
+
+    class Config:
+        orm_mode = True
+
+
+
+
+class LogBase(BaseModel):
+    doc: Optional[bytes]
+
+class LogCreate(LogBase):
     idUsers: int
-    roldID: Rol
 
-    class Config:
-        from_attributes = True
-
-class LogsBase(BaseModel):
-    log_activityType: str
-    log_Timestamp: str
-    Users_idUsers: int
-
-class LogsCreate(LogsBase):
-    pass
-
-class Logs(LogsBase):
+class Log(LogBase):
     idLogs: int
-    user: User
+    doc: Optional[bytes]
+    idUsers: int
 
     class Config:
-        from_attributes = True
+        orm_mode = True
 
-class TopologyBase(BaseModel):
-    name_topology: str
 
-class TopologyCreate(TopologyBase):
-    pass
 
-class Topology(TopologyBase):
-    idTopology: int
-
-    class Config:
-        from_attributes = True
-
-class SlicesBase(BaseModel):
+class SliceBase(BaseModel):
     name: str
-    status: str
+    status: int
     number_nodes: str
     number_links: str
-    Users_idUsers: str
-    Topology_idTopology: int
 
-class SlicesCreate(SlicesBase):
-    pass
+class SliceCreate(SliceBase):
+    idUsers: int
 
-class Slices(SlicesBase):
+class Slice(SliceBase):
     idSlices: int
-    user: User
-    topology: Topology
+    idUsers: int
 
     class Config:
-        from_attributes = True
+        orm_mode = True
+
+
+
 
 class TokenBase(BaseModel):
-    Slices_idSlices: int
     TokenValue: str
+    timestamp: datetime
 
 class TokenCreate(TokenBase):
-    pass
+    idSlices: int
 
 class Token(TokenBase):
     idToken: int
-    slices: Slices
+    idSlices: int  
 
     class Config:
-        from_attributes = True
+        orm_mode = True
 
-class VMImagesBase(BaseModel):
-    name: str
-    Slices_idSlices: int
 
-class VMImagesCreate(VMImagesBase):
-    pass
-
-class VMImages(VMImagesBase):
-    idVM_images: int
-    slices: Slices
-
-    class Config:
-        from_attributes = True
-
-class NodesBase(BaseModel):
-    VM_name: str
+class NodeBase(BaseModel):
+    VM_name:str
     capacity: str
     port: str
     description: str
-    Slices_idSlices: int
-    VM_images_idVM_images: int
+    status: int
 
-class NodesCreate(NodesBase):
+
+class NodeCreate(NodeBase):
+    MAC: str
     pass
 
-class Nodes(NodesBase):
-    idNodes: int
-    slices: Slices
-    vm_images: VMImages
+class Node(NodeBase):
+    MAC: str
+    idSlices: int
+    idImages: int
+    idServers: int
+    idflavor: int
 
     class Config:
-        from_attributes = True
+        orm_mode = True
 
-class SystemsResourcesBase(BaseModel):
-    ResourceUsage: str
-    Slices_idSlices: int
+class FlavorBase(BaseModel):
+    memory: str
+    RAM: str
+    disk: str
 
-class SystemsResourcesCreate(SystemsResourcesBase):
+class FlavorCreate(FlavorBase):
+    idFlavor: int
     pass
 
-class SystemsResources(SystemsResourcesBase):
-    idsytemsresources: int
-    slices: Slices
+class Flavor(FlavorBase):
+    idFlavor: int
 
     class Config:
-        from_attributes = True
+        orm_mode = True
 
-class VMConfigurationsBase(BaseModel):
-    VMName: str
-    Slices_idSlices: int
-    MemorySize: str
 
-class VMConfigurationsCreate(VMConfigurationsBase):
+class EdgesBase(BaseModel):
+    title: str
+    
+
+class EdgesCreate(EdgesBase):
+    idedges: int
     pass
 
-class VMConfigurations(VMConfigurationsBase):
-    idVMConfigurations: int
-    slices: Slices
+class Edges(EdgesBase):
+    idedges: int
+    nodes_MAC:str
 
     class Config:
-        from_attributes = True
+        orm_mode = True
+
+class SubnetBase(BaseModel):
+    name: str
+    
+
+class  SubnetCreate(SubnetBase):
+    idsubnet: int
+    pass
+
+class  Subnet(SubnetBase):
+    idsubnet: int
+    edges_idedges:int
+
+    class Config:
+        orm_mode = True
+
+class PortBase(BaseModel):
+    name: str
+    
+
+class  PortCreate(PortBase):
+    idport: int
+    pass
+
+class  Port(PortBase):
+    idport: int
+    idSubnet:int
+
+    class Config:
+        orm_mode = True
+
+
+class ImagesBase(BaseModel):
+    name: str
+    plataforma:int
+    ruta:str
+    
+    
+
+class  ImagesCreate(ImagesBase):
+    idimages: int
+    pass
+
+class  Images(ImagesBase):
+    idimages: int
+   
+
+    class Config:
+        orm_mode = True
+
+
+class ServersBase(BaseModel):
+    ServerName: str
+    ServerIP:str
+    ServerStatus:str
+    AZ:int
+    
+    
+
+class  ServersCreate(ServersBase):
+    idServers: int
+    pass
+
+class  Servers(ServersBase):
+    idServers: int
+   
+
+    class Config:
+        orm_mode = True
+
+class ServerusageBase(BaseModel):
+    ServerName: str
+    ServerIP:str
+    ServerStatus:str
+    AZ:int
+    
+    
+
+class  ServerusageCreate(ServerusageBase):
+    idserverusage: int
+    pass
+
+class  Servers(ServerusageBase):
+    idserverusage: int
+    idServers:int
+   
+
+    class Config:
+        orm_mode = True
+
+
+class SystemsresourcesBase(BaseModel):
+    CPUUsage: str
+    memory:str
+    disk:str
+    timestamp:str
+    
+    
+
+class  SystemsresourcesCreate(SystemsresourcesBase):
+    idsystemsResources: int
+    pass
+
+class  Systemsresources(SystemsresourcesBase):
+    idsystemsResources: int
+    MAC:str
+   
+
+    class Config:
+        orm_mode = True
