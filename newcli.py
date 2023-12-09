@@ -3,7 +3,25 @@ import pickle
 import inquirer
 from tabulate import tabulate
 import networkx as nx
+import mysql.connector
 import matplotlib.pyplot as plt
+
+from user import User
+from project import Project
+from instance import  Instance
+from network import Network
+from subnet import Subnet
+from port import Port
+
+def conectar_a_bd():
+    return mysql.connector.connect(
+        host="localhost",
+        user="root",
+        password="root",
+        database="mydb",
+        port="3306"
+    )
+
 def guardar_usuarios(usuarios):
     with open("usuarios.pkl", "wb") as file:
         pickle.dump(usuarios, file)
@@ -51,15 +69,34 @@ def crear_topologia_anillo(num_maquinas):
     plt.show()
 
 
+def verificar_credenciales(usuario, contraseña):
+    conn = conectar_a_bd()
+    cursor = conn.cursor()
 
-usuarios = {
-    "admin": {"contraseña": "admin", "rol": "admin", "slices": []},
-    "user": {"contraseña": "user", "rol": "usuario_normal", "slices": []}
-}
+    try:
 
-usuarios["admin"]["slices"].append({"Nombre": "Slice AWS Admin", "Arquitectura": "AWS"})
-usuarios["user"]["slices"].append({"Nombre": "Slice AWS user", "Arquitectura": "aws"})
-usuarios["user"]["slices"].append({"Nombre": "Slice 2", "Arquitectura": "aws"})
+        query = "SELECT role FROM users WHERE username = %s AND password = %s"
+        cursor.execute(query, (usuario, contraseña))
+
+
+        result = cursor.fetchone()
+
+
+        cursor.close()
+        conn.close()
+
+        if result:
+            rol = result[0]
+            if rol == 1:
+                return "admin"
+            else:
+                return "rol_desconocido"
+
+        else:
+            return None
+    except mysql.connector.Error as err:
+        print("Error en la base de datos:", err)
+        return None
 
 
 
@@ -513,13 +550,13 @@ while True:
     datos_usuario = obtener_datos_usuario()
     usuario = datos_usuario['usuario']
     contraseña = datos_usuario['contraseña']
+    rol = verificar_credenciales(usuario, contraseña)
 
-    if usuario in usuarios and usuarios[usuario]["contraseña"] == contraseña:
-        rol = usuarios[usuario]["rol"]
+    if rol:
         print("Bienvenido,", usuario + " (Rol: " + rol + ")!")
 
         while True:
-            if rol == "usuario_normal":
+            if rol == "admin":
                 menu_options = {
                     "1": "Crear slice",
                     "2": "Listar mis slices",
@@ -551,9 +588,9 @@ while True:
                 else:
                     print("Opción no válida. Por favor, selecciona una opción válida.")
 
-
             else:
                 print("Rol no válido.")
+                break
 
         with open("slices.pkl", "wb") as file:
             pickle.dump(slices_creados, file)
