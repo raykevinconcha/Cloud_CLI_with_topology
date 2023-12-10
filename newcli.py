@@ -256,14 +256,14 @@ def crear_slice(usuario, slices_creados, topologias_options):
                                  slice_info["Detalle CPUs"]]
                     print(tabulate(cpu_table, cpu_headers, tablefmt="grid"))
 
-                    post_creation_questions = [
-                        inquirer.List('post_creation_action',
-                                      message="¿Qué acción deseas realizar ahora?",
-                                      choices=['Imprimir topología', 'Mostrar JSON', 'Ambos',
-                                               'Volver al menú principal'],
-                                      )
-                    ]
-                    post_creation_action = input_menu("Acción post-creación", post_creation_questions)
+                    post_creation_options = {
+                        'Imprimir topología': 'Imprimir topología',
+                        'Mostrar JSON': 'Mostrar JSON',
+                        'Ambos': 'Ambos',
+                        'Volver al menú principal': 'Volver al menú principal'
+                    }
+                    post_creation_action = input_menu("Acción post-creación", post_creation_options)
+
                     if post_creation_action == 'Imprimir topología' or post_creation_action == 'Ambos':
                         if slice_info['Topología'] == "Lineal":
                             crear_topologia_lineal(slice_info['Total CPUs'])
@@ -565,7 +565,7 @@ while True:
                     "5": "Gestionar Usuarios",
                     "6": "Salir"
                 }
-                opcion = print_menu("Menú Principal - Usuario Normal", menu_options)
+                opcion = print_menu("Menú Principal - Administrador", menu_options)
                 print(f"Opción seleccionada: {opcion}")
 
                 if opcion == "6":
