@@ -6,12 +6,7 @@ import networkx as nx
 import mysql.connector
 import matplotlib.pyplot as plt
 
-from user import User
-from project import Project
-from instance import  Instance
-from network import Network
-from subnet import Subnet
-from port import Port
+
 
 def conectar_a_bd():
     return mysql.connector.connect(
