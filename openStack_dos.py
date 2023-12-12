@@ -159,7 +159,7 @@ def menu():
         DOMAIN_ID = "default"
 
         ADMIN_PASSWORD = 'fa6ca065b77b2e8904897745332a03bd'
-        ADMIN_DOMAIN_NAME = "default"
+        ADMIN_DOMAIN_NAME = "Default"
 
         ADMIN_PROJECT_NAME = "proyecto"
         ADMIN_USERNAME = "admin"
@@ -175,10 +175,13 @@ def menu():
 
             project_description = "-"
 
+
             token_admin = obtenerTokenAdmin(GATEWAY_IP, ADMIN_PASSWORD, ADMIN_USERNAME, ADMIN_DOMAIN_NAME, DOMAIN_ID,
                                       ADMIN_PROJECT_NAME)
 
-            if token_admin:
+            token = TokenProject(GATEWAY_IP, token_admin, DOMAIN_ID, ADMIN_PROJECT_NAME)
+
+            if token:
                 print('''
                             1. Crear network y subred
                             2. Crear o editar grupo de seguridad
@@ -191,14 +194,17 @@ def menu():
                     nombre_subred = input('[?] Ingrese el nombre de la subred: ')
                     cidr = input('[?] Ingrese el CIDR: ')
 
-                    network_id = create_network(GATEWAY_IP, token_admin, nombre_red)
-                    create_subnet(GATEWAY_IP, token_admin, network_id, nombre_subred, IP_VERSION, cidr)
+                    network_id = create_network(GATEWAY_IP, token, nombre_red)
+                    create_subnet(GATEWAY_IP, token, network_id, nombre_subred, IP_VERSION, cidr)
 
-                    pr = crearProyecto(GATEWAY_IP, token_admin, DOMAIN_ID, ADMIN_PROJECT_NAME, project_description)
+                    pr = crearProyecto(GATEWAY_IP, token, DOMAIN_ID, ADMIN_PROJECT_NAME, project_description)
 
-                    pa = create_port(GATEWAY_IP, token_admin, nombre_red, network_id, pr)
+                    pa = create_port(GATEWAY_IP, token, nombre_red, network_id, pr)
 
-                    pb = create_port(GATEWAY_IP, token_admin, nombre_red, network_id, pr)
+                    pb = create_port(GATEWAY_IP, token, nombre_red, network_id, pr)
+
+                    instance_1_networks = [{"port": pa}]
+                    instance_2_networks = [{"port": pb}]
 
 
                     print('''
@@ -212,11 +218,11 @@ def menu():
                         instance_1_name = input('[?] Ingrese nombre de la VM1: ')
                         instance_2_name = input('[?] Ingrese nombre de la VM2: ')
 
-                        create_instance(GATEWAY_IP, token_admin, instance_1_name, "f66221d0-80d4-4558-9909-838374cf70d7",
-                                        '6120912b-1c26-4f8b-b2bb-02225ff5bfea', pa)
+                        create_instance(GATEWAY_IP, token, instance_1_name, "f66221d0-80d4-4558-9909-838374cf70d7",
+                                        '6120912b-1c26-4f8b-b2bb-02225ff5bfea', instance_1_networks)
 
-                        create_instance(GATEWAY_IP, token_admin, instance_2_name, 'f66221d0-80d4-4558-9909-838374cf70d7',
-                                        '6120912b-1c26-4f8b-b2bb-02225ff5bfea', pb)
+                        create_instance(GATEWAY_IP, token, instance_2_name, 'f66221d0-80d4-4558-9909-838374cf70d7',
+                                        '6120912b-1c26-4f8b-b2bb-02225ff5bfea', instance_2_networks)
 
 menu()
 
