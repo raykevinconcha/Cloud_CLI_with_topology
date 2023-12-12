@@ -278,12 +278,37 @@ def obtener_info_vm(self, vm_id):
     return requests.get(url, headers=headers).json()
 
 
+def obtener_sg(self):
+    headers = {'Content-Type': 'application/json',
+               'X-Auth-Token': self.TOKEN}
+    url = self.NETWORK_URL + "/v2.0/security-groups"
+    response = requests.get(url, headers=headers)
+    return response.json()['security_groups']
+
 def obtener_info_flavor(self, flavor_id):
     headers = {'Content-Type': 'application/json',
                'X-Auth-Token': self.TOKEN}
     url = self.COMPUTE_URL + "/flavors/" + flavor_id
     return requests.get(url, headers=headers).json()
 
+
+def crear_sg_rule(self, protocolo, puerto, ip, sg_id):
+    headers = {'Content-Type': 'application/json',
+               'X-Auth-Token': self.TOKEN}
+    url = self.NETWORK_URL + "/v2.0/security-group-rules"
+    data = {
+        "security_group_rule": {
+            "direction": "ingress",
+            "port_range_min": puerto,
+            "ethertype": "IPv4",
+            "port_range_max": puerto,
+            "protocol": protocolo,
+            "remote_ip_prefix": ip,
+            "security_group_id": sg_id
+        }
+    }
+    response = requests.post(url, headers=headers, data=json.dumps(data))
+    print(response.json())
 
 def obtener_info_imagen(self, image_id):
     headers = {'Content-Type': 'application/json',
@@ -327,7 +352,7 @@ def menu():
             if token:
                 print('''
                             1. Crear network y subred
-                            2. Crear o editar grupo de seguridad
+                            2. Editar grupo de seguridad
                             
                         ''')
                 opcion = input('[?] Ingrese su opcion: ')
@@ -411,6 +436,42 @@ def menu():
                             lista_tabular_redes.append([id, name,
                                                         cidr])  # usada para imprimir los datos en una tabla con la libreria 'tabulate'
                         print(tabulate(lista_tabular_redes, headers=['id', 'name', 'cidr']), end="\n\n")
+                if opcion == '2':
+                    opcion = input('[?] Ingrese su opcion: ')
+                    print()  # imprimir una nueva linea
+                    if (opcion == '2'):
+                        lista_sg = obtener_sg()
+                        # 1. se imprime la lista de security groups
+                        lista_tabular_sg = [[sg['id'], sg['name']] for sg in
+                                            lista_sg]  # usada para imprimir los datos en una tabla con la libreria 'tabulate'
+                        print(tabulate(lista_tabular_sg, headers=['id', 'name']), end="\n\n")
+                        sg_input = input('[?] Ingrese el nombre del SG a editar: ')
+                        print()  # imprimir una nueva linea
+                        # 2. se impre las reglas dentro del SG
+                        sg_id = None
+                        for sg in lista_sg:
+                            if sg['name'] == sg_input:
+                                sg_id = sg['id']  # a usar en la creacion de la regla
+                                lista_tabular_rules = [
+                                    [rule['protocol'], rule['port_range_min'], rule['port_range_max'],
+                                     rule['remote_ip_prefix']] for rule in sg['security_group_rules']]
+                                # para que se impriman los valores por defecto
+                                for rule in lista_tabular_rules:
+                                    if rule[0] == None: rule[0] = 'None'
+                                    if rule[1] == None: rule[1] = 'None'
+                                    if rule[2] == None: rule[2] = 'None'
+                                    if rule[3] == None: rule[3] = '0.0.0.0/0'
+                                print(tabulate(lista_tabular_rules,
+                                               headers=['protocol', 'port_range_min', 'port_range_max',
+                                                        'remote_ip_prefix']), end="\n\n")
+                                break
+                        # 2. agregar regla de seguridad
+                        protocolo = input('[?] Ingrese el protocolo (tcp, udp): ')
+                        puerto = input('[?] Ingrese el puerto: ')
+                        ip = input('[?] Ingrese el prefijo de IP remoto: ')
+                        crear_sg_rule(protocolo, puerto, ip, sg_id)
+
+
 
 
 
