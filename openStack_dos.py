@@ -178,6 +178,39 @@ def crear_subred(token_proyecto, id_red, nombre_subred, cidr):
         print('FAILED SUBNET CREATION')
         return None
 
+
+def crear_puerto(token_proyecto, nombre_puerto, id_red):
+    gateway_ip = '10.20.10.68'
+    neutron_endpoint = 'http://' + gateway_ip + ':9696/v2.0'
+    id_proyecto = "4c99e29d56344c1088d5c0bca7e9a22c"
+    resp = create_port(neutron_endpoint, token_proyecto, nombre_puerto, id_red, id_proyecto)
+    if resp.status_code == 201:
+        print('PORT CREATED SUCCESSFULLY')
+        puerto_creado = resp.json()
+        print(json.dumps(puerto_creado))
+        # Extraer el ID del puerto
+        id_puerto = puerto_creado["port"]["id"]
+        print(f"ID del puerto creado: {id_puerto}")
+        return id_puerto  # Devuelve el ID del puerto
+    else:
+        print('FAILED PORT CREATION')
+        return None
+
+
+
+
+def crear_instancia(token_proyecto, nombre_instancia, id_flavor, id_imagen, redes):
+    gateway_ip = '10.20.10.68'
+    nova_endpoint = 'http://' + gateway_ip + ':8774/v2.1'
+    resp = create_instance(nova_endpoint, token_proyecto, nombre_instancia, id_flavor, id_imagen, redes)
+    if resp.status_code == 202:
+        print('INSTANCE CREATED SUCCESSFULLY')
+        instancia_creada = resp.json()
+        print(json.dumps(instancia_creada))
+        return instancia_creada
+    else:
+        print('FAILED INSTANCE CREATION')
+        return None
 def menu():
 
     while True:
@@ -230,12 +263,18 @@ def menu():
 
                     subred=crear_subred(token, network_id, nombre_subred, cidr)
 
-                    pr = crearProyectonew(token)
+                    #pr = crearProyectonew(token)
 
-                    # pa = create_port(GATEWAY_IP, token, nombre_red, network_id, pr)
-                    #
-                    # pb = create_port(GATEWAY_IP, token, nombre_red, network_id, pr)
-                    #
+
+                    pa=crear_puerto(token,nombre_red,network_id)
+                    pb=crear_puerto(token,nombre_red,network_id)
+
+
+
+
+
+
+
                     # instance_1_networks = [{"port": pa}]
                     # instance_2_networks = [{"port": pb}]
 
