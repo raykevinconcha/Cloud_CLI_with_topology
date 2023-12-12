@@ -9,8 +9,8 @@ from openstack_sdk import create_network
 from openstack_sdk import create_port
 from openstack_sdk import assign_role_to_user
 from openstack_sdk import create_subnet
-from openstack_sdk import token_authentication_with_scoped_authorization, password_authentication_with_scoped_authorization,create_project
-
+from openstack_sdk import token_authentication_with_scoped_authorization,create_project
+from openstack_sdk import password_authentication_with_scoped_authorization
 
 
 
@@ -118,7 +118,8 @@ def obtenerTokenAdmin(gateway_ip, admin_password, admin_username, admin_domain_n
         domain_id,
         admin_project_name
     )
-
+    print(resp)
+    print(resp.status_code)
     if resp.status_code == 201:
         admin_token = resp.headers['X-Subject-Token']
         print(f'Token de administrador: {admin_token}')
@@ -126,6 +127,26 @@ def obtenerTokenAdmin(gateway_ip, admin_password, admin_username, admin_domain_n
     else:
         print('La autenticación del administrador ha fallado')
         return None
+
+
+def obtener_token_admin():
+    gateway_ip = '10.20.10.68'
+    keystone_endpoint = f'http://{gateway_ip}:5000/v3'
+    admin_user_password = 'fa6ca065b77b2e8904897745332a03bd'
+    admin_user_username = 'admin'
+    admin_user_domain_name = 'Default'
+    domain_id = 'default'
+    admin_project_name = 'admin'
+
+    resp1 = password_authentication_with_scoped_authorization(keystone_endpoint, admin_user_domain_name,
+                                                              admin_user_username, admin_user_password, domain_id,
+                                                              admin_project_name)
+
+
+    print('SUCCESSFUL ADMIN AUTHENTICATION')
+    admin_token = resp1.headers['X-Subject-Token']
+    return admin_token
+
 
 
 def TokenProject(gateway_ip, admin_token, domain_id, project_name):
@@ -176,8 +197,11 @@ def menu():
             project_description = "-"
 
 
-            token_admin = obtenerTokenAdmin(GATEWAY_IP, ADMIN_PASSWORD, ADMIN_USERNAME, ADMIN_DOMAIN_NAME, DOMAIN_ID,
-                                      ADMIN_PROJECT_NAME)
+            token_admin = obtener_token_admin()
+            if token_admin:
+                print(f'Token de administrador: {token_admin}')
+            else:
+                print('Autenticación fallida')
 
             token = TokenProject(GATEWAY_IP, token_admin, DOMAIN_ID, ADMIN_PROJECT_NAME)
 
@@ -224,8 +248,8 @@ def menu():
                         create_instance(GATEWAY_IP, token, instance_2_name, 'f66221d0-80d4-4558-9909-838374cf70d7',
                                         '6120912b-1c26-4f8b-b2bb-02225ff5bfea', instance_2_networks)
 
-menu()
 
+menu()
 
 
 

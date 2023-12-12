@@ -5,7 +5,7 @@ from tabulate import tabulate
 import networkx as nx
 import mysql.connector
 import matplotlib.pyplot as plt
-
+from openStack_dos import menu
 
 
 def conectar_a_bd():
@@ -173,113 +173,115 @@ def crear_slice(usuario, slices_creados, topologias_options):
 
     if arquitectura == "3":
         return
-
-    while True:
-        worker_options = {
+    if arquitectura == "1":
+        menu()
+    if arquitectura == "2":
+        while True:
+            worker_options = {
             "1": "Worker 1",
             "2": "Worker 2",
             "3": "Worker 3",
             "4": "Salir"
-        }
-        worker = input_menu("Selección de Worker (Región)", worker_options)
+            }
+            worker = input_menu("Selección de Worker (Región)", worker_options)
 
-        if worker == "4":
-            break
-        elif worker in ["1", "2", "3"]:
-            worker_name = "Worker " + worker
-            while True:
-                topologia_options = {
-                    "1": "Lineal",
-                    "2": "Árbol",
-                    "3": "Malla",
-                    "4": "Anillo",
-                    "5": "Salir"
-                }
-                topologia = input_menu("Selección de Topología", topologia_options)
-                print(f"Topología seleccionada: {topologia_options[topologia]}")
-
-                if topologia == "5":
-                    break
-
-                elif topologia in topologia_options:
-                    topo_seleccionada = topologia_options[topologia]
-
-                    nombre_slice = input("Ingresa un nombre para la slice: ")
-                    num_cpus = int(input("Ingresa la cantidad de CPUs: "))
-
-                    # Variables específicas para la topología de árbol
-                    r = h = None
-                    if topo_seleccionada == "Árbol":
-                        r = int(input("Ingrese el número de ramificaciones por nodo: "))
-                        h = int(input("Ingrese la altura del árbol: "))
-
-                    total_ram = 0
-                    total_almacenamiento = 0
-                    cpus_info = []
-
-                    for cpu_num in range(1, num_cpus + 1):
-                        print(f"\nDetalles para la CPU {cpu_num}:")
-                        ram = int(input("Ingresa la cantidad de RAM en MB para esta CPU: "))
-                        almacenamiento = int(
-                            input("Ingresa la cantidad de almacenamiento en MB para esta CPU: "))
-
-                        cpus_info.append(
-                            {"CPU": cpu_num, "RAM": ram, "Almacenamiento": almacenamiento})
-                        total_ram += ram
-                        total_almacenamiento += almacenamiento
-
-                    slice_info = {
-                        "Nombre": nombre_slice,
-                        "Topología": topo_seleccionada,
-                        "Total CPUs": num_cpus,
-                        "Total RAM": total_ram,
-                        "Total Almacenamiento": total_almacenamiento,
-                        "Detalle CPUs": cpus_info,
-                        "Ramificaciones": r if r else None,
-                        "Altura": h if h else None,
-                        "Arquitectura": arquitectura,
-                        "Worker": worker_name
+            if worker == "4":
+                return
+            elif worker in ["1", "2", "3"]:
+                worker_name = "Worker " + worker
+                while True:
+                    topologia_options = {
+                        "1": "Lineal",
+                        "2": "Árbol",
+                        "3": "Malla",
+                        "4": "Anillo",
+                        "5": "Salir"
                     }
+                    topologia = input_menu("Selección de Topología", topologia_options)
+                    print(f"Topología seleccionada: {topologia_options[topologia]}")
 
-                    if usuario not in slices_creados:
-                        slices_creados[usuario] = []
-                    slices_creados[usuario].append(slice_info)
+                    if topologia == "5":
+                        break
 
-                    print(f"\nSlice creado exitosamente. Detalles del Slice: {slice_info['Nombre']}")
-                    cpu_headers = ["CPU", "RAM (MB)", "Alm. (MB)"]
-                    cpu_table = [[cpu['CPU'], cpu['RAM'], cpu['Almacenamiento']] for cpu in
-                                 slice_info["Detalle CPUs"]]
-                    print(tabulate(cpu_table, cpu_headers, tablefmt="grid"))
+                    elif topologia in topologia_options:
+                        topo_seleccionada = topologia_options[topologia]
 
-                    post_creation_options = {
-                        'Imprimir topología': 'Imprimir topología',
-                        'Mostrar JSON': 'Mostrar JSON',
-                        'Ambos': 'Ambos',
-                        'Volver al menú principal': 'Volver al menú principal'
-                    }
-                    post_creation_action = input_menu("Acción post-creación", post_creation_options)
+                        nombre_slice = input("Ingresa un nombre para la slice: ")
+                        num_cpus = int(input("Ingresa la cantidad de CPUs: "))
 
-                    if post_creation_action == 'Imprimir topología' or post_creation_action == 'Ambos':
-                        if slice_info['Topología'] == "Lineal":
-                            crear_topologia_lineal(slice_info['Total CPUs'])
-                        elif slice_info['Topología'] == "Árbol":
-                            r = slice_info.get('Ramificaciones', 2)
-                            h = slice_info.get('Altura', 1)
-                            crear_topologia_arbol(r, h)
-                        elif slice_info['Topología'] == "Malla":
-                            crear_topologia_malla_full_mesh(slice_info['Total CPUs'])
-                        elif slice_info['Topología'] == "Anillo":
-                            crear_topologia_anillo(slice_info['Total CPUs'])
-                        else:
-                            print("Topología no reconocida.")
+                        # Variables específicas para la topología de árbol
+                        r = h = None
+                        if topo_seleccionada == "Árbol":
+                            r = int(input("Ingrese el número de ramificaciones por nodo: "))
+                            h = int(input("Ingrese la altura del árbol: "))
 
-                    if post_creation_action in ['Mostrar JSON', 'Ambos']:
-                        print(json.dumps(slice_info, indent=4))
-                    break
-                else:
-                    print("Topología no válida. Por favor, selecciona una topología válida.")
-        else:
-            print("Worker no válido. Por favor, selecciona una región válida.")
+                        total_ram = 0
+                        total_almacenamiento = 0
+                        cpus_info = []
+
+                        for cpu_num in range(1, num_cpus + 1):
+                            print(f"\nDetalles para la CPU {cpu_num}:")
+                            ram = int(input("Ingresa la cantidad de RAM en MB para esta CPU: "))
+                            almacenamiento = int(
+                                input("Ingresa la cantidad de almacenamiento en MB para esta CPU: "))
+
+                            cpus_info.append(
+                                {"CPU": cpu_num, "RAM": ram, "Almacenamiento": almacenamiento})
+                            total_ram += ram
+                            total_almacenamiento += almacenamiento
+
+                        slice_info = {
+                            "Nombre": nombre_slice,
+                            "Topología": topo_seleccionada,
+                            "Total CPUs": num_cpus,
+                            "Total RAM": total_ram,
+                            "Total Almacenamiento": total_almacenamiento,
+                            "Detalle CPUs": cpus_info,
+                            "Ramificaciones": r if r else None,
+                            "Altura": h if h else None,
+                            "Arquitectura": arquitectura,
+                            "Worker": worker_name
+                        }
+
+                        if usuario not in slices_creados:
+                            slices_creados[usuario] = []
+                        slices_creados[usuario].append(slice_info)
+
+                        print(f"\nSlice creado exitosamente. Detalles del Slice: {slice_info['Nombre']}")
+                        cpu_headers = ["CPU", "RAM (MB)", "Alm. (MB)"]
+                        cpu_table = [[cpu['CPU'], cpu['RAM'], cpu['Almacenamiento']] for cpu in
+                                     slice_info["Detalle CPUs"]]
+                        print(tabulate(cpu_table, cpu_headers, tablefmt="grid"))
+
+                        post_creation_options = {
+                            'Imprimir topología': 'Imprimir topología',
+                            'Mostrar JSON': 'Mostrar JSON',
+                            'Ambos': 'Ambos',
+                            'Volver al menú principal': 'Volver al menú principal'
+                        }
+                        post_creation_action = input_menu("Acción post-creación", post_creation_options)
+
+                        if post_creation_action == 'Imprimir topología' or post_creation_action == 'Ambos':
+                            if slice_info['Topología'] == "Lineal":
+                                crear_topologia_lineal(slice_info['Total CPUs'])
+                            elif slice_info['Topología'] == "Árbol":
+                                r = slice_info.get('Ramificaciones', 2)
+                                h = slice_info.get('Altura', 1)
+                                crear_topologia_arbol(r, h)
+                            elif slice_info['Topología'] == "Malla":
+                                crear_topologia_malla_full_mesh(slice_info['Total CPUs'])
+                            elif slice_info['Topología'] == "Anillo":
+                                crear_topologia_anillo(slice_info['Total CPUs'])
+                            else:
+                                print("Topología no reconocida.")
+
+                        if post_creation_action in ['Mostrar JSON', 'Ambos']:
+                            print(json.dumps(slice_info, indent=4))
+                        break
+                    else:
+                        print("Topología no válida. Por favor, selecciona una topología válida.")
+            else:
+                print("Worker no válido. Por favor, selecciona una región válida.")
 
 
 # Función para mostrar menú y obtener una selección del usuario
