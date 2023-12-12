@@ -578,8 +578,7 @@ while True:
                     borrar_slice(usuario, slices_creados)
                 elif opcion == "4":
                     editar_slice(usuario, slices_creados)
-                elif opcion == "5":
-                     gestionar_usuarios(usuarios)
+
                 else:
                     print("Opción no válida. Por favor, selecciona una opción válida.")
 

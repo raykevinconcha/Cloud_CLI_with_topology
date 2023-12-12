@@ -1,7 +1,7 @@
 from tabulate import tabulate
 import requests
 import json
-from ..logging.Logging import Logging
+
 
 from openstack_sdk import create_flavor
 from openstack_sdk import create_instance
@@ -14,14 +14,6 @@ from openstack_sdk import token_authentication_with_scoped_authorization, passwo
 
 
 
-ADMIN_ID=""
-
-READER=""
-ADMIN=""
-MEMBER=""
-
-
-CIDR=""
 
 
 def createFlavor(gateway_ip, token_for_project, name, ram, vcpus, disk, flavor_id):
@@ -156,67 +148,17 @@ def TokenProject(gateway_ip, admin_token, domain_id, project_name):
 
 
 
-def main():
-    #Datos que no se cambian
-    gateway_ip = GATEWAY_IP
-    admin_password = ADMIN_PASSWORD
-    admin_domain_name = ADMIN_DOMAIN_NAME
-    domain_id = DOMAIN_ID
-    admin_project_name = ADMIN_PROJECT_NAME
-    admin_username = ADMIN_USERNAME
-
-    #Datos que deben cambiarse de acuerdo a lo que ingresa el usuario
-    network_name = 'Enlace 1'
-    subnet_name = 'Subred del Enlace 1'
-    ip_version = '4'
-    cidr = '10.0.39.96/28'
-    network_id = '4af63c6b-a719-401d-b8ee-429f320ba1b0'
-    port_name = 'Enlace 1'
-    project_id = 'c0ee6cd0d5f94c808eb8b5a8813963aa'
-
-
-    instance_1_name = 'instance 1'
-    instance_1_flavor_id = '5c199260-3938-4b8a-94e8-9282e915b508'
-    instance_1_image_id = '48d109e3-e4ab-422b-99fa-04a0b70cea7e'
-    instance_1_networks = [{"port": "dfe4c979-297c-4f74-a069-d72201a0db04"}]
-
-    instance_2_name = 'instance 2'
-    instance_2_flavor_id = '5c199260-3938-4b8a-94e8-9282e915b508'
-    instance_2_image_id = '48d109e3-e4ab-422b-99fa-04a0b70cea7e'
-    instance_2_networks = [{"port": "dfe4c979-297c-4f74-a069-d72201a0db04"}]
-
-
-    # Obtener el token del administrador
-    project_token = obtenerTokenAdmin(gateway_ip, admin_password, admin_username, admin_domain_name, domain_id,
-                                      admin_project_name)
-
-    if project_token:
-        # Crear la red con el token del proyecto
-        create_network(gateway_ip, project_token, network_name)
-        create_subnet(gateway_ip, project_token, network_id, subnet_name, ip_version, cidr)
-        create_port(gateway_ip, project_token, port_name, network_id, project_id)
-        create_instance(gateway_ip, project_token, instance_1_name, instance_1_flavor_id, instance_1_image_id, instance_1_networks)
-        create_instance(gateway_ip, project_token, instance_2_name, instance_2_flavor_id, instance_2_image_id, instance_2_networks)
-
-
-        # Puedes realizar operaciones adicionales aquí utilizando el token de administrador
-        print('Operaciones adicionales realizadas exitosamente.')
-    else:
-        print('La autenticación del administrador ha fallado. No se pudo obtener el token.')
-
-#if _name_ == "_main_":
-    main()
 
 
 
 def menu():
-    global openstackApi
+
     while True:
 
         GATEWAY_IP = "10.20.10.68"
         DOMAIN_ID = "default"
 
-        ADMIN_PASSWORD = "khkhkjgjfjhfghdsertu"
+        ADMIN_PASSWORD = 'fa6ca065b77b2e8904897745332a03bd'
         ADMIN_DOMAIN_NAME = "default"
 
         ADMIN_PROJECT_NAME = "proyecto"
@@ -225,32 +167,22 @@ def menu():
 
         print('''
             1. Ingresar credenciales
-            2. Crear network
-            3. Crear keypair
-            4. Crear o editar grupo de seguridad
-            5. Crear VM
-            6. Listar VMs
+            
         ''')
         opcion = input('[?] Ingrese su opcion: ')
         print()  # imprimir una nueva linea
         if opcion == '1':
-            openstackApi.OS_USERNAME = input('[?] Ingrese el usuario: ')
-            openstackApi.OS_PASSWORD = input('[?] Ingrese la contraseña: ')
-            openstackApi.obtener()
-
 
             project_description = "-"
 
-            token_admin = openstackApi.obtenerTokenAdmin(GATEWAY_IP, ADMIN_PASSWORD, ADMIN_USERNAME, ADMIN_DOMAIN_NAME, DOMAIN_ID,
+            token_admin = obtenerTokenAdmin(GATEWAY_IP, ADMIN_PASSWORD, ADMIN_USERNAME, ADMIN_DOMAIN_NAME, DOMAIN_ID,
                                       ADMIN_PROJECT_NAME)
 
             if token_admin:
                 print('''
                             1. Crear network y subred
-                            
                             2. Crear o editar grupo de seguridad
-                            3. Crear VM
-                            4. Listar VMs
+                            
                         ''')
                 opcion = input('[?] Ingrese su opcion: ')
                 print()  # imprimir una nueva linea
@@ -259,26 +191,40 @@ def menu():
                     nombre_subred = input('[?] Ingrese el nombre de la subred: ')
                     cidr = input('[?] Ingrese el CIDR: ')
 
-
                     network_id = create_network(GATEWAY_IP, token_admin, nombre_red)
                     create_subnet(GATEWAY_IP, token_admin, network_id, nombre_subred, IP_VERSION, cidr)
 
+                    pr = crearProyecto(GATEWAY_IP, token_admin, DOMAIN_ID, ADMIN_PROJECT_NAME, project_description)
+
+                    pa = create_port(GATEWAY_IP, token_admin, nombre_red, network_id, pr)
+
+                    pb = create_port(GATEWAY_IP, token_admin, nombre_red, network_id, pr)
 
 
-                    create_port(GATEWAY_IP, token_admin, nombre_red, network_id, project_id)
+                    print('''
+                                
+                                1. Crear VM
+                                2. Listar VMs
+                            ''')
+                    opcion = input('[?] Ingrese su opcion: ')
+                    print()  # imprimir una nueva linea
+                    if opcion == '3':
+                        instance_1_name = input('[?] Ingrese nombre de la VM1: ')
+                        instance_2_name = input('[?] Ingrese nombre de la VM2: ')
 
-                elif opcion == '2':
+                        create_instance(GATEWAY_IP, token_admin, instance_1_name, "f66221d0-80d4-4558-9909-838374cf70d7",
+                                        '6120912b-1c26-4f8b-b2bb-02225ff5bfea', pa)
+
+                        create_instance(GATEWAY_IP, token_admin, instance_2_name, 'f66221d0-80d4-4558-9909-838374cf70d7',
+                                        '6120912b-1c26-4f8b-b2bb-02225ff5bfea', pb)
+
+menu()
 
 
-                elif opcion == '3':
-                    instance_1_name = input('[?] Ingrese el nombre de la red: ')
-                    instance_2_name = input('[?] Ingrese el nombre de la subred: ')
 
-                    create_instance(GATEWAY_IP, token_admin, instance_1_name, instance_1_flavor_id,
-                                    instance_1_image_id, instance_1_networks)
 
-                    create_instance(GATEWAY_IP, token_admin, instance_2_name, instance_2_flavor_id,
-                                    instance_2_image_id, instance_2_networks)
+
+
 
 
 
