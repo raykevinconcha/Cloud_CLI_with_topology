@@ -30,7 +30,8 @@ def createFlavor(gateway_ip, token_for_project, name, ram, vcpus, disk, flavor_i
         return None
 
 
-def createInstance(gateway_ip, token_for_project, instance_name, flavor_id, image_id, networks):
+def createInstance(token_for_project, instance_name, flavor_id, image_id, networks):
+    gateway_ip = '10.20.10.68'
     nova_endpoint = f'http://{gateway_ip}:8774/v2.1'
     resp = create_instance(nova_endpoint, token_for_project, instance_name, flavor_id, image_id, networks)
     print(resp.status_code)
@@ -221,10 +222,10 @@ def crear_puerto(token_proyecto, nombre_puerto, id_red):
 
 
 
-
-def crear_instancia(token_proyecto, nombre_instancia, id_flavor, id_imagen, redes):
+def crear_instancia(token_proyecto,nombre_instancia, id_flavor, id_imagen, redes):
     gateway_ip = '10.20.10.68'
     nova_endpoint = 'http://' + gateway_ip + ':8774/v2.1'
+
     resp = create_instance(nova_endpoint, token_proyecto, nombre_instancia, id_flavor, id_imagen, redes)
     if resp.status_code == 202:
         print('INSTANCE CREATED SUCCESSFULLY')
@@ -395,11 +396,11 @@ def menu():
                         instance_1_name = input('[?] Ingrese nombre de la VM1: ')
                         instance_2_name = input('[?] Ingrese nombre de la VM2: ')
 
-                        create_instance(GATEWAY_IP, token, instance_1_name, "f66221d0-80d4-4558-9909-838374cf70d7",
-                                        '6120912b-1c26-4f8b-b2bb-02225ff5bfea', instance_1_networks)
+                        crear_instancia( token, instance_1_name, "f66221d0-80d4-4558-9909-838374cf70d7",
+                                        '6120912b-1c26-4f8b-b2bb-02225ff5bfea', [{"port": pa}])
 
-                        create_instance(GATEWAY_IP, token, instance_2_name, 'f66221d0-80d4-4558-9909-838374cf70d7',
-                                        '6120912b-1c26-4f8b-b2bb-02225ff5bfea', instance_2_networks)
+                        crear_instancia(token, instance_2_name, 'f66221d0-80d4-4558-9909-838374cf70d7',
+                                        '6120912b-1c26-4f8b-b2bb-02225ff5bfea', [{"port": pb}])
                     if (opcion == '2'):
                         lista_vms = listar_vm()['servers']
                         lista_tabular_vm = [[vm['id'], vm['name']] for vm in
