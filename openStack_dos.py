@@ -1,6 +1,7 @@
-
+from tabulate import tabulate
 import json
 
+import requests
 
 from openstack_sdk import create_flavor
 from openstack_sdk import create_instance
@@ -142,8 +143,30 @@ def obtener_token_proyecto(admin_token):
         print(f'Token del proyecto: {token_for_project}')
         return token_for_project
     else:
-        print('FAILED AUTHENTICATION FOR PROJECT ')
-        return None
+        print('FAILED AUTHENTICATION FOR PROJECT ' + project_name)
+        return
+
+
+def listar_flavors(self):
+    headers = {'Content-Type': 'application/json',
+               'X-Auth-Token': self.TOKEN}
+    url = self.COMPUTE_URL + "/flavors"
+    return requests.get(url, headers=headers).json()['flavors']
+
+
+def listar_imagenes(self):
+    headers = {'Content-Type': 'application/json',
+               'X-Auth-Token': self.TOKEN}
+    url = self.GLANCE_URL + "/v2/images"
+    return requests.get(url, headers=headers).json()['images']
+
+
+def listar_redes(self):
+    headers = {'Content-Type': 'application/json',
+               'X-Auth-Token': self.TOKEN}
+    url = self.NETWORK_URL + "/v2.0/networks"
+    return requests.get(url, headers=headers).json()['networks']
+
 
 def crear_red(token_proyecto, nombre_red):
     gateway_ip = '10.20.10.68'
@@ -211,6 +234,63 @@ def crear_instancia(token_proyecto, nombre_instancia, id_flavor, id_imagen, rede
     else:
         print('FAILED INSTANCE CREATION')
         return None
+
+
+def listar_flavors(self):
+    headers = {'Content-Type': 'application/json',
+               'X-Auth-Token': self.TOKEN}
+    url = self.COMPUTE_URL + "/flavors"
+    return requests.get(url, headers=headers).json()['flavors']
+
+
+def listar_imagenes(self):
+    headers = {'Content-Type': 'application/json',
+               'X-Auth-Token': self.TOKEN}
+    url = self.GLANCE_URL + "/v2/images"
+    return requests.get(url, headers=headers).json()['images']
+
+
+def listar_redes(self):
+    headers = {'Content-Type': 'application/json',
+               'X-Auth-Token': self.TOKEN}
+    url = self.NETWORK_URL + "/v2.0/networks"
+    return requests.get(url, headers=headers).json()['networks']
+
+
+def obtener_subred(self, subnet_id):
+    headers = {'Content-Type': 'application/json',
+               'X-Auth-Token': self.TOKEN}
+    url = self.NETWORK_URL + '/v2.0/subnets/' + subnet_id
+    return requests.get(url, headers=headers).json()['subnet']
+
+
+def listar_vm(self):
+    headers = {'Content-Type': 'application/json',
+               'X-Auth-Token': self.TOKEN}
+    url = self.COMPUTE_URL + "/servers"
+    return requests.get(url, headers=headers).json()
+
+
+def obtener_info_vm(self, vm_id):
+    headers = {'Content-Type': 'application/json',
+               'X-Auth-Token': self.TOKEN}
+    url = self.COMPUTE_URL + "/servers/" + vm_id
+    return requests.get(url, headers=headers).json()
+
+
+def obtener_info_flavor(self, flavor_id):
+    headers = {'Content-Type': 'application/json',
+               'X-Auth-Token': self.TOKEN}
+    url = self.COMPUTE_URL + "/flavors/" + flavor_id
+    return requests.get(url, headers=headers).json()
+
+
+def obtener_info_imagen(self, image_id):
+    headers = {'Content-Type': 'application/json',
+               'X-Auth-Token': self.TOKEN}
+    url = self.GLANCE_URL + "/v2/images/" + image_id
+    return requests.get(url, headers=headers).json()
+
 def menu():
 
     while True:
@@ -286,7 +366,7 @@ def menu():
                             ''')
                     opcion = input('[?] Ingrese su opcion: ')
                     print()  # imprimir una nueva linea
-                    if opcion == '3':
+                    if opcion == '1':
                         instance_1_name = input('[?] Ingrese nombre de la VM1: ')
                         instance_2_name = input('[?] Ingrese nombre de la VM2: ')
 
@@ -295,6 +375,44 @@ def menu():
 
                         create_instance(GATEWAY_IP, token, instance_2_name, 'f66221d0-80d4-4558-9909-838374cf70d7',
                                         '6120912b-1c26-4f8b-b2bb-02225ff5bfea', instance_2_networks)
+                    if (opcion == '2'):
+                        lista_vms = listar_vm()['servers']
+                        lista_tabular_vm = [[vm['id'], vm['name']] for vm in
+                                            lista_vms]  # usada para imprimir los datos en una tabla con la libreria 'tabulate'
+                        print(tabulate(lista_tabular_vm, headers=['id', 'name']), end="\n\n")
+                        # se obtiene info de una vm en particular
+                        vm_id = input('[?] Ingrese el ID de la VM para obtener un mayor detalle: ')
+                        vm_info = obtener_info_vm(vm_id)['server']
+                        print()
+                        # 1. nombre
+                        print(' nombre: ' + vm_info['name'])
+                        # 2. flavor
+                        flavor_id = vm_info['flavor']['id']
+                        flavor_info = obtener_info_flavor(flavor_id)['flavor']
+                        print(' flavor:')
+                        print('     id: ' + vm_info['flavor']['id'])
+                        print('     nombre: ' + flavor_info['name'])
+                        print('     ram: ' + str(flavor_info['ram']) + 'mb')
+                        print('     disk: ' + str(flavor_info['disk']) + 'gb')
+                        print('     vcpus: ' + str(flavor_info['vcpus']))
+
+                    if opcion == '2':
+                        redes = listar_redes()
+                        lista_tabular_redes = []
+                        for red in redes:
+                            id = red['id']
+                            name = red['name']
+                            if red['subnets']:
+                                subnet_id = red['subnets'][0]
+                                subnet_info = obtener_subred(subnet_id)
+                                cidr = subnet_info['cidr']
+                            else:
+                                cidr = '-'
+                            lista_tabular_redes.append([id, name,
+                                                        cidr])  # usada para imprimir los datos en una tabla con la libreria 'tabulate'
+                        print(tabulate(lista_tabular_redes, headers=['id', 'name', 'cidr']), end="\n\n")
+
+
 
 
 menu()
