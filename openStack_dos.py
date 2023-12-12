@@ -55,7 +55,8 @@ def createNetwork(gateway_ip, token_for_project, network_name):
         return None
 
 
-def crearProyecto(gateway_ip, token_for_project, domain_id, project_name, project_description):
+def crearProyecto(token_for_project, domain_id, project_name, project_description):
+    gateway_ip = '10.20.10.68'
     keystone_endpoint = f'http://{gateway_ip}:5000/v3'
     resp = create_project(keystone_endpoint, token_for_project, domain_id, project_name, project_description)
     print(resp.status_code)
@@ -67,6 +68,20 @@ def crearProyecto(gateway_ip, token_for_project, domain_id, project_name, projec
     else:
         print('FAILED PROJECT CREATION')
         return None
+
+def crearProyectonew(token_for_project):
+    domain_id = 'default'
+    gateway_ip = '10.20.10.68'
+    project_name = 'admin'
+    project_description = "-"
+    keystone_endpoint = f'http://{gateway_ip}:5000/v3'
+    resp = create_project(keystone_endpoint, token_for_project, domain_id, project_name, project_description)
+
+
+    print('PROJECT CREATED SUCCESSFULLY')
+    project_created = resp.json()
+    print(json.dumps(project_created))
+    return project_created
 
 
 def createPort(gateway_ip, token_for_project, port_name, network_id, project_id):
@@ -93,39 +108,7 @@ def asignRole(gateway_ip, admin_token, project_id, user_id, role_id):
         return None
 
 
-def createSubnet(gateway_ip, token_for_project, network_id, subnet_name, ip_version, cidr):
-    neutron_endpoint = f'http://{gateway_ip}:9696/v2.0'
-    resp = create_subnet(neutron_endpoint, token_for_project, network_id, subnet_name, ip_version, cidr)
-    if resp.status_code == 201:
-        print('SUBNET CREATED SUCCESSFULLY')
-        subnet_created = resp.json()
-        print(json.dumps(subnet_created))
-        return subnet_created
-    else:
-        print('FAILED SUBNET CREATION')
-        return None
 
-
-def obtenerTokenAdmin(gateway_ip, admin_password, admin_username, admin_domain_name, domain_id, admin_project_name):
-    keystone_endpoint = f'http://{gateway_ip}:5000/v3'
-
-    resp = password_authentication_with_scoped_authorization(
-        keystone_endpoint,
-        admin_domain_name,
-        admin_username,
-        admin_password,
-        domain_id,
-        admin_project_name
-    )
-    print(resp)
-    print(resp.status_code)
-    if resp.status_code == 201:
-        admin_token = resp.headers['X-Subject-Token']
-        print(f'Token de administrador: {admin_token}')
-        return admin_token
-    else:
-        print('La autenticación del administrador ha fallado')
-        return None
 
 
 def obtener_token_admin():
@@ -146,30 +129,54 @@ def obtener_token_admin():
     admin_token = resp1.headers['X-Subject-Token']
     return admin_token
 
+def obtener_token_proyecto(admin_token):
+    gateway_ip = '10.20.10.68'
+    domain_id = 'default'
+    project_name = 'admin'
 
-
-def TokenProject(gateway_ip, admin_token, domain_id, project_name):
     keystone_endpoint = f'http://{gateway_ip}:5000/v3'
+    resp = token_authentication_with_scoped_authorization(keystone_endpoint, admin_token, domain_id, project_name)
 
-    resp1 = token_authentication_with_scoped_authorization(
-        keystone_endpoint,
-        admin_token,
-        domain_id,
-        project_name
-    )
-    if resp1.status_code == 201:
-        token_for_project = resp1.headers['X-Subject-Token']
+    if resp.status_code == 201:
+        token_for_project = resp.headers['X-Subject-Token']
         print(f'Token del proyecto: {token_for_project}')
         return token_for_project
     else:
         print('FAILED AUTHENTICATION FOR PROJECT ')
         return None
 
+def crear_red(token_proyecto, nombre_red):
+    gateway_ip = '10.20.10.68'
+    # ENDPOINTS
+    neutron_endpoint = 'http://' + gateway_ip + ':9696/v2.0'
 
+    resp = create_network(neutron_endpoint, token_proyecto, nombre_red)
+    if resp.status_code == 201:
+        print('NETWORK CREATED SUCCESSFULLY')
+        red_creada = resp.json()
+        print(json.dumps(red_creada))
 
+        id_red = red_creada["network"]["id"]
+        print(f"ID de la red creada: {id_red}")
+        return id_red  # Devuelve el ID de la red
+    else:
+        print('FAILED NETWORK CREATION')
+        return None
 
-
-
+def crear_subred(token_proyecto, id_red, nombre_subred, cidr):
+    gateway_ip = '10.20.10.68'
+    # ENDPOINTS
+    version_ip = '4'
+    neutron_endpoint = 'http://' + gateway_ip + ':9696/v2.0'
+    resp = create_subnet(neutron_endpoint, token_proyecto, id_red, nombre_subred, version_ip, cidr)
+    if resp.status_code == 201:
+        print('SUBNET CREATED SUCCESSFULLY')
+        subred_creada = resp.json()
+        print(json.dumps(subred_creada))
+        return subred_creada
+    else:
+        print('FAILED SUBNET CREATION')
+        return None
 
 def menu():
 
@@ -202,7 +209,7 @@ def menu():
             else:
                 print('Autenticación fallida')
 
-            token = TokenProject(GATEWAY_IP, token_admin, DOMAIN_ID, ADMIN_PROJECT_NAME)
+            token = obtener_token_proyecto(token_admin)
 
             if token:
                 print('''
@@ -217,17 +224,20 @@ def menu():
                     nombre_subred = input('[?] Ingrese el nombre de la subred: ')
                     cidr = input('[?] Ingrese el CIDR: ')
 
-                    network_id = create_network(GATEWAY_IP, token, nombre_red)
-                    create_subnet(GATEWAY_IP, token, network_id, nombre_subred, IP_VERSION, cidr)
 
-                    pr = crearProyecto(GATEWAY_IP, token, DOMAIN_ID, ADMIN_PROJECT_NAME, project_description)
 
-                    pa = create_port(GATEWAY_IP, token, nombre_red, network_id, pr)
+                    network_id = crear_red(token, nombre_red)
 
-                    pb = create_port(GATEWAY_IP, token, nombre_red, network_id, pr)
+                    subred=crear_subred(token, network_id, nombre_subred, cidr)
 
-                    instance_1_networks = [{"port": pa}]
-                    instance_2_networks = [{"port": pb}]
+                    pr = crearProyectonew(token)
+
+                    # pa = create_port(GATEWAY_IP, token, nombre_red, network_id, pr)
+                    #
+                    # pb = create_port(GATEWAY_IP, token, nombre_red, network_id, pr)
+                    #
+                    # instance_1_networks = [{"port": pa}]
+                    # instance_2_networks = [{"port": pb}]
 
 
                     print('''
@@ -249,7 +259,6 @@ def menu():
 
 
 menu()
-
 
 
 
